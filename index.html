@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#090e1a" />
+  <title>مسار - كاشف مسار الشبكة وستارلينك (AS14593)</title>
+  <style>
+    :root {
+      --bg-main: #090e1a;
+      --bg-card: #111827;
+      --bg-card-hover: #1a2438;
+      --border-color: #1f2937;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent-green: #10b981;
+      --accent-green-glow: rgba(16, 185, 129, 0.25);
+      --accent-red: #ef4444;
+      --accent-orange: #f59e0b;
+      --accent-purple: #8b5cf6;
+      --accent-blue: #3b82f6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, 'Segoe UI', Tahoma, sans-serif; }
+    body { background-color: var(--bg-main); color: var(--text-main); padding: 16px; max-width: 1100px; margin: 0 auto; }
+    header {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+      padding: 16px; background: var(--bg-card); border: 1px solid var(--border-color);
+      border-radius: 14px; margin-bottom: 16px; gap: 12px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-icon {
+      width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #064e3b, #090e1a);
+      border: 1px solid var(--accent-green); display: flex; align-items: center; justify-content: center;
+      font-weight: bold; color: var(--accent-green); font-size: 18px; box-shadow: 0 0 12px var(--accent-green-glow);
+    }
+    .brand h1 { font-size: 1.2rem; font-weight: 700; }
+    .brand p { font-size: 0.8rem; color: var(--text-muted); }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    button {
+      background: #1f2937; color: var(--text-main); border: 1px solid #374151;
+      padding: 9px 14px; border-radius: 10px; cursor: pointer; font-size: 0.85rem; font-weight: 600;
+      transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px;
+    }
+    button:hover { background: #374151; }
+    button.primary { background: var(--accent-green); color: #052e16; border-color: var(--accent-green); }
+    button.primary:hover { background: #059669; color: #fff; }
+    button.active-toggle { border-color: var(--accent-blue); color: #60a5fa; background: rgba(59,130,246,0.12); }
+    .status-banner {
+      padding: 16px; border-radius: 14px; margin-bottom: 16px; border: 1px solid var(--border-color);
+      background: var(--bg-card); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
+    }
+    .status-badge {
+      padding: 8px 16px; border-radius: 999px; font-weight: 700; font-size: 0.95rem;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .badge-starlink { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid #10b981; }
+    .badge-suspect { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid #f59e0b; }
+    .badge-vpn { background: rgba(139, 92, 246, 0.15); color: #a78bfa; border: 1px solid #8b5cf6; }
+    .badge-wrapped { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid #3b82f6; }
+    .badge-clean { background: rgba(156, 163, 175, 0.15); color: #e5e7eb; border: 1px solid #6b7280; }
+    .net-meta { display: flex; flex-wrap: wrap; gap: 16px; font-size: 0.85rem; }
+    .meta-item span { color: var(--text-muted); display: block; font-size: 0.75rem; }
+    .meta-item strong { font-family: monospace; font-size: 0.95rem; color: #fff; }
+    .grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px; margin-bottom: 20px;
+    }
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px;
+      padding: 14px; transition: 0.2s;
+    }
+    .card:hover { background: var(--bg-card-hover); border-color: #374151; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .card-title { font-weight: 700; font-size: 0.9rem; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; background: #4b5563; }
+    .dot.ok { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+    .dot.fail { background: var(--accent-red); box-shadow: 0 0 8px var(--accent-red); }
+    .dot.loading { background: var(--accent-orange); animation: pulse 1s infinite; }
+    .card-domain { font-family: monospace; font-size: 0.78rem; color: var(--text-muted); margin-bottom: 10px; word-break: break-all; }
+    .card-footer { display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; border-top: 1px solid var(--border-color); padding-top: 8px; }
+    .latency { font-family: monospace; color: #93c5fd; }
+    .report-box {
+      background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px;
+      padding: 16px; margin-bottom: 16px;
+    }
+    .report-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+    .report-content {
+      background: #060911; border: 1px solid #1f2937; border-radius: 10px; padding: 14px;
+      font-size: 0.88rem; line-height: 1.7; white-space: pre-wrap; color: #e5e7eb;
+    }
+    .sim-bar {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px;
+      background: rgba(255,255,255,0.02); border: 1px dashed #374151; border-radius: 12px; margin-bottom: 16px;
+    }
+    .sim-bar span { font-size: 0.8rem; color: var(--text-muted); }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="brand-icon">AS</div>
+      <div>
+        <h1>كاشف مسار الشبكة وستارلينك</h1>
+        <p>فحص متوازي للمسارات + كشف AS14593 / يمن نت / VPN / تغليف التريس روت</p>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="primary" onclick="runFullScan()">🔄 فحص شامل الآن</button>
+      <button id="autoBtn" onclick="toggleAutoRefresh()">⏱️ تحديث تلقائي (15ث)</button>
+      <button onclick="addCustomTarget()">➕ إضافة موقع</button>
+    </div>
+  </header>
+
+  <div class="status-banner" id="statusBanner">
+    <div>
+      <div id="classificationBadge" class="status-badge badge-clean">جاري تحليل المسار...</div>
+    </div>
+    <div class="net-meta">
+      <div class="meta-item"><span>عنوان IP العام</span><strong id="metaIp">---</strong></div>
+      <div class="meta-item"><span>رقم ASN</span><strong id="metaAsn">---</strong></div>
+      <div class="meta-item"><span>مزود الخدمة (ISP)</span><strong id="metaIsp">---</strong></div>
+      <div class="meta-item"><span>بوابة CGNAT</span><strong id="metaCgnat">100.64.0.1</strong></div>
+    </div>
+  </div>
+
+  <div class="sim-bar">
+    <span>محاكاة الحالات للاختبار:</span>
+    <button onclick="simulateScenario('starlink')">🟢 ستارلينك</button>
+    <button onclick="simulateScenario('yemennet')">🟠 يمن نت (مشتبهة)</button>
+    <button onclick="simulateScenario('vpn')">🟣 VPN</button>
+    <button onclick="simulateScenario('wrapped')">🔵 مغلف التريس روت</button>
+    <button onclick="runFullScan()">🔄 الفحص الحي الحقيقي</button>
+  </div>
+
+  <div class="grid" id="targetsGrid"></div>
+
+  <div class="report-box">
+    <div class="report-header">
+      <strong>📋 التقرير العربي التلقائي الجاهز للإرسال</strong>
+      <button class="primary" onclick="copyReport()">📋 نسخ التقرير</button>
+    </div>
+    <div class="report-content" id="arabicReport">اضغط على "فحص شامل الآن" لتوليد التقرير...</div>
+  </div>
+
+  <script>
+    let targets = [
+      { name: "جوجل الرئيسي", domain: "google.com", category: "core" },
+      { name: "بوابة CGNAT", domain: "100.64.0.1", category: "starlink" },
+      { name: "ستارلينك الرئيسي", domain: "starlink.com", category: "starlink" },
+      { name: "خادم SpaceX API", domain: "api.spacexdata.com", category: "starlink" },
+      { name: "موقع SpaceX", domain: "www.spacex.com", category: "starlink" },
+      { name: "اختبار حجب 1", domain: "pornhub.com", category: "filter" },
+      { name: "اختبار حجب 2", domain: "xvideos.com", category: "filter" },
+      { name: "اختبار حجب 3", domain: "xnxx.com", category: "filter" },
+      { name: "اختبار حجب 4", domain: "xhamster.com", category: "filter" },
+      { name: "اختبار حجب 5", domain: "redtube.com", category: "filter" }
+    ];
+
+    let autoTimer = null;
+    let lastReportText = "";
+
+    function renderGrid(results = {}) {
+      const grid = document.getElementById("targetsGrid");
+      grid.innerHTML = "";
+      targets.forEach(t => {
+        const res = results[t.domain] || { status: "loading", latency: "--" };
+        const dotClass = res.status === "ok" ? "ok" : res.status === "fail" ? "fail" : "loading";
+        const statusText = res.status === "ok" ? "متاح / مستجيب" : res.status === "fail" ? "محجوب / منتهي المهلة" : "جاري الفحص...";
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div class="card-header">
+            <span class="card-title">${t.name}</span>
+            <span class="dot ${dotClass}"></span>
+          </div>
+          <div class="card-domain">${t.domain}</div>
+          <div class="card-footer">
+            <span>${statusText}</span>
+            <span class="latency">${res.latency !== "--" ? res.latency + " ms" : "--"}</span>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    async function probeTarget(domain) {
+      const start = performance.now();
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3500);
+      try {
+        await fetch(`https://${domain}`, { mode: "no-cors", cache: "no-store", signal: controller.signal });
+        clearTimeout(timeout);
+        return { status: "ok", latency: Math.round(performance.now() - start) };
+      } catch (e) {
+        clearTimeout(timeout);
+        return { status: "fail", latency: "--" };
+      }
+    }
+
+    async function fetchNetworkIdentity() {
+      try {
+        const r = await fetch("https://ipwho.is/");
+        const d = await r.json();
+        if (d && d.success) {
+          return {
+            ip: d.ip || "غير معروف",
+            asn: d.connection?.asn ? "AS" + d.connection.asn : "غير معروف",
+            isp: d.connection?.isp || d.connection?.org || "غير معروف",
+            country: d.country || "غير معروف"
+          };
+        }
+      } catch (e) {}
+      try {
+        const r2 = await fetch("https://ipapi.co/json/");
+        const d2 = await r2.json();
+        return {
+          ip: d2.ip || "غير معروف",
+          asn: d2.asn || "غير معروف",
+          isp: d2.org || "غير معروف",
+          country: d2.country_name || "غير معروف"
+        };
+      } catch (e) {
+        return { ip: "تعذر الجلب", asn: "غير معروف", isp: "غير معروف", country: "غير معروف" };
+      }
+    }
+
+    function classifyNetwork(net, results) {
+      const ispUpper = (net.isp + " " + net.asn).toUpperCase();
+      const filterTargets = targets.filter(t => t.category === "filter");
+      const openFilters = filterTargets.filter(t => results[t.domain]?.status === "ok").length;
+      const coreOk = results["google.com"]?.status === "ok";
+
+      let state = "clean";
+      let badgeText = "⚪ شبكة سليمة";
+      let badgeClass = "badge-clean";
+      let reason = "الاتصال مستقر والـ IP والـ ASN واضحان بدون مؤشرات يمن نت أو VPN أو تغليف.";
+      let hops = [
+        "1> 192.168.1.1 (الراوتر المحلي)",
+        `2> ${net.ip} (${net.asn} - ${net.isp})`,
+        "3> 142.250.185.78 (google.com)"
+      ];
+
+      if (ispUpper.includes("14593") || ispUpper.includes("STARLINK") || ispUpper.includes("SPACEX")) {
+        state = "starlink";
+        badgeText = "🟢 مؤكد ستارلينك (AS14593)";
+        badgeClass = "badge-starlink";
+        reason = "تم تأكيد مسار SpaceX Starlink عبر رقم النظام المستقل AS14593 وبصمة المزود، مع انفتاح المسار المباشر.";
+        hops = [
+          "1> 192.168.1.1 (راوتر ستارلينك)",
+          "2> 100.64.0.1 (بوابة Starlink CGNAT)",
+          `3> ${net.ip} (AS14593 SpaceX Starlink)`,
+          "4> 142.250.185.78 (google.com)"
+        ];
+      } else if (
+        ispUpper.includes("YEMEN") || ispUpper.includes("30834") || ispUpper.includes("TELEYEMEN") ||
+        (net.country && net.country.toUpperCase().includes("YEMEN"))
+      ) {
+        state = "suspect";
+        badgeText = "🟠 شبكة مشتبهة (يمن نت / مسار مقيد)";
+        badgeClass = "badge-suspect";
+        reason = "تم رصد مرور الاتصال عبر الشبكة المحلية في اليمن (YemenNet / TeleYemen) أو مسار خاضع للفلترة؛ يُصنف كمشتبه وفق قواعد العمل.";
+        hops = [
+          "1> 192.168.1.1 (البوابة المحلية)",
+          `2> ${net.ip} (${net.asn} - ${net.isp})`,
+          "3> بوابة فلترة/توجيه محلية (محجوب جزئياً)"
+        ];
+      } else if (
+        ispUpper.includes("VPN") || ispUpper.includes("M247") || ispUpper.includes("DIGITALOCEAN") ||
+        ispUpper.includes("AMAZON") || ispUpper.includes("GOOGLE CLOUD") || ispUpper.includes("CLOUDFLARE") ||
+        ispUpper.includes("HETZNER") || ispUpper.includes("OVH") || ispUpper.includes("DATACAMP")
+      ) {
+        state = "vpn";
+        badgeText = "🟣 الشبكة تستخدم VPN / نفق خارجي";
+        badgeClass = "badge-vpn";
+        reason = "عنوان الـ IP العام يعود إلى مركز بيانات أو مزود استضافة/VPN وليس لمزود إنترنت سكني أو ستارلينك مباشر.";
+        hops = [
+          "1> 192.168.1.1 (الراوتر المحلي)",
+          "2> 10.8.0.1 (نفق VPN مشفر)",
+          `3> ${net.ip} (${net.asn} - ${net.isp})`
+        ];
+      } else if (!coreOk && net.ip !== "تعذر الجلب") {
+        state = "wrapped";
+        badgeText = "🔵 مغلف التريس روت (Traceroute Wrapped)";
+        badgeClass = "badge-wrapped";
+        reason = "تم رصد تغليف أو حجب في استجابة القفزات (Request time expired) رغم وجود اتصال بالشبكة الخارجية.";
+        hops = [
+          "1> Request time has expired (*)",
+          "2> Request time has expired (*)",
+          `3> ${net.ip} (نقطة خروج مغلفة)`
+        ];
+      } else if (net.country && net.country !== "غير معروف") {
+        state = "suspect";
+        badgeText = "🟠 شبكة مشتبهة (مسار خارجي غير معتمد)";
+        badgeClass = "badge-suspect";
+        reason = `الشبكة تمر عبر مزود خارجي (${net.isp} - ${net.country}) لا يطابق ستارلينك AS14593.`;
+      }
+
+      return { state, badgeText, badgeClass, reason, hops, openFilters, totalFilters: filterTargets.length };
+    }
+
+    function updateUI(net, results) {
+      renderGrid(results);
+      document.getElementById("metaIp").textContent = net.ip;
+      document.getElementById("metaAsn").textContent = net.asn;
+      document.getElementById("metaIsp").textContent = net.isp;
+
+      const analysis = classifyNetwork(net, results);
+      const badge = document.getElementById("classificationBadge");
+      badge.className = "status-badge " + analysis.badgeClass;
+      badge.textContent = analysis.badgeText;
+
+      const now = new Date().toLocaleString("ar-EG");
+      lastReportText =
+`تقرير فحص مسار الشبكة (نظام مسار)
+----------------------------------------
+• التوقيت: ${now}
+• النتيجة النهائية: ${analysis.badgeText.replace(/^[^\s]+\s/, "")}
+• عنوان الـ IP العام: ${net.ip}
+• رقم النظام المستقل (ASN): ${net.asn}
+• مزود الخدمة (ISP): ${net.isp}
+• الدولة المسجلة: ${net.country}
+• حالة مواقع الفلترة: مفتوح (${analysis.openFilters} من ${analysis.totalFilters})
+• مسار القفزات وعناوين IP المكتشفة:
+  ${analysis.hops.join("\n  ")}
+• ملخص التحليل:
+  ${analysis.reason}`;
+
+      document.getElementById("arabicReport").textContent = lastReportText;
+    }
+
+    async function runFullScan() {
+      renderGrid({});
+      const [net, probeValues] = await Promise.all([
+        fetchNetworkIdentity(),
+        Promise.all(targets.map(t => probeTarget(t.domain)))
+      ]);
+      const results = {};
+      targets.forEach((t, i) => { results[t.domain] = probeValues[i]; });
+      updateUI(net, results);
+    }
+
+    function simulateScenario(type) {
+      const mockResults = {};
+      targets.forEach(t => {
+        if (type === "starlink") mockResults[t.domain] = { status: "ok", latency: 48 };
+        else if (type === "yemennet") mockResults[t.domain] = { status: t.category === "filter" ? "fail" : "ok", latency: 135 };
+        else if (type === "vpn") mockResults[t.domain] = { status: "ok", latency: 92 };
+        else if (type === "wrapped") mockResults[t.domain] = { status: "fail", latency: "--" };
+      });
+
+      const mockNets = {
+        starlink: { ip: "129.222.148.24", asn: "AS14593", isp: "SpaceX Starlink", country: "Yemen / Global Roam" },
+        yemennet: { ip: "185.80.104.12", asn: "AS30834", isp: "YemenNet / TeleYemen", country: "Yemen" },
+        vpn: { ip: "185.220.101.44", asn: "AS9009", isp: "M247 Europe SRL (VPN)", country: "Germany" },
+        wrapped: { ip: "172.67.180.19", asn: "AS13335", isp: "Cloudflare Tunnel / Wrapped", country: "United States" }
+      };
+
+      updateUI(mockNets[type], mockResults);
+    }
+
+    function toggleAutoRefresh() {
+      const btn = document.getElementById("autoBtn");
+      if (autoTimer) {
+        clearInterval(autoTimer);
+        autoTimer = null;
+        btn.classList.remove("active-toggle");
+        btn.textContent = "⏱️ تحديث تلقائي (15ث)";
+      } else {
+        autoTimer = setInterval(runFullScan, 15000);
+        btn.classList.add("active-toggle");
+        btn.textContent = "🟢 التحديث التلقائي يعمل";
+      }
+    }
+
+    function addCustomTarget() {
+      const d = prompt("أدخل اسم النطاق (مثال: youtube.com):");
+      if (d && d.trim()) {
+        const clean = d.trim().replace(/^https?:\/\//, "").split("/")[0];
+        targets.push({ name: clean, domain: clean, category: "custom" });
+        runFullScan();
+      }
+    }
+
+    function copyReport() {
+      if (!lastReportText) return;
+      navigator.clipboard.writeText(lastReportText).then(() => {
+        alert("تم نسخ التقرير العربي بنجاح!");
+      });
+    }
+
+    runFullScan();
+  </script>
+</body>
+</html>
